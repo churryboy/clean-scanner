@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="QANDA 이미지 업로드 시스템 - Google 시트에 이미지를 업로드하세요">
+    <title>이미지 업로드 시스템 | QANDA</title>
+    
+    <!-- Pretendard Font (Design System Typography) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    
+    <!-- Design System Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Mixpanel Analytics -->
+    <script type="text/javascript">
+    (function(f,b){if(!b.__SV){var e,g,i,h;window.mixpanel=b;b._i=[];b.init=function(e,f,c){function g(a,d){var b=d.split(".");2==b.length&&(a=a[b[0]],d=b[1]);a[d]=function(){a.push([d].concat(Array.prototype.slice.call(arguments,0)))}}var a=b;"undefined"!==typeof c?a=b[c]=[]:c="mixpanel";a.people=a.people||[];a.toString=function(a){var d="mixpanel";"mixpanel"!==c&&(d+="."+c);a||(d+=" (stub)");return d};a.people.toString=function(){return a.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms track_with_groups add_group set_group remove_group register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking start_batch_senders people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user people.remove".split(" ");
+    for(h=0;h<i.length;h++)g(a,i[h]);var j="set set_once union unset remove delete".split(" ");a.get_group=function(){function b(c){d[c]=function(){call2_args=arguments;call2=[c].concat(Array.prototype.slice.call(call2_args,0));a.push([e,call2])}}for(var d={},e=["get_group"].concat(Array.prototype.slice.call(arguments,0)),c=0;c<j.length;c++)b(j[c]);return d};b._i.push([e,f,c])};b.__SV=1.2;e=f.createElement("script");e.type="text/javascript";e.async=!0;e.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===f.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";g=f.getElementsByTagName("script")[0];g.parentNode.insertBefore(e,g)}})(document,window.mixpanel||[]);
+    </script>
+
+</head>
+<body>
+    <!-- Main Container (Card Component) -->
+    <div class="container" role="main">
+        <!-- LargeTitle Typography -->
+        <h1>📸 이미지 업로드 시스템</h1>
+        
+        <!-- Subheadline Typography -->
+        <p class="subtitle">이미지를 Google 시트에 업로드하세요</p>
+        
+        <!-- Form Group: Email Input -->
+        <div class="form-group">
+            <label for="emailInput">이메일 주소</label>
+            <input 
+                type="email" 
+                id="emailInput" 
+                placeholder="your@email.com" 
+                required
+                aria-required="true"
+                aria-describedby="emailHint">
+            <span id="emailHint" class="sr-only">유효한 이메일 주소를 입력하세요</span>
+        </div>
+
+        <!-- Form Group: Image Upload -->
+        <div class="form-group">
+            <label for="fileInput">이미지 선택</label>
+            
+            <!-- Upload Area Component -->
+            <div 
+                class="upload-area" 
+                id="uploadArea"
+                role="button"
+                tabindex="0"
+                aria-label="이미지 업로드 영역. 클릭하거나 드래그하여 업로드하세요"
+                aria-describedby="uploadHint">
+                <div class="upload-icon" aria-hidden="true">📁</div>
+                <div class="upload-text">클릭하거나 드래그하여 업로드</div>
+                <div class="upload-hint" id="uploadHint">PNG, JPG, JPEG 최대 5MB</div>
+                <input 
+                    type="file" 
+                    id="fileInput" 
+                    accept="image/*" 
+                    hidden
+                    aria-label="이미지 업로드 파일 입력">
+            </div>
+            
+            <!-- Preview Container -->
+            <div class="preview-container" id="previewContainer" role="region" aria-live="polite">
+                <div class="file-name" id="fileName"></div>
+                <img 
+                    id="previewImage" 
+                    class="preview-image" 
+                    alt="업로드된 이미지 미리보기">
+            </div>
+        </div>
+        
+        <!-- Primary Button (Design System Button - Large) -->
+        <button 
+            id="submitBtn" 
+            type="button"
+            disabled
+            aria-label="이미지 업로드 제출">
+            제출
+        </button>
+        
+        <!-- Message Display (Semantic Colors) -->
+        <div 
+            id="message" 
+            class="message" 
+            role="alert" 
+            aria-live="assertive">
+        </div>
+    </div>
+
+    <!-- Version Info (Design System - Bottom Right) -->
+    <div class="version-info" aria-hidden="true">
+        v4.0 | 829fcf5
+    </div>
+
+    <!-- Configuration -->
+    <script src="config.js"></script>
+    
+    <!-- Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
