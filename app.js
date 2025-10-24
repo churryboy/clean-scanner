@@ -83,7 +83,11 @@ const analytics = {
 const state = {
     selectedFile: null,
     uploadStartTime: null,
-    dragTracked: false
+    dragTracked: false,
+    
+    // Admin State
+    adminSelectedFile: null,
+    adminUploadStartTime: null
 };
 
 // DOM Elements
@@ -95,7 +99,20 @@ const elements = {
     previewImage: document.getElementById('previewImage'),
     fileName: document.getElementById('fileName'),
     submitBtn: document.getElementById('submitBtn'),
-    message: document.getElementById('message')
+    message: document.getElementById('message'),
+    
+    // Admin Elements
+    versionInfo: document.getElementById('versionInfo'),
+    adminPanel: document.getElementById('adminPanel'),
+    adminClose: document.getElementById('adminClose'),
+    adminEmailInput: document.getElementById('adminEmailInput'),
+    adminUploadArea: document.getElementById('adminUploadArea'),
+    adminFileInput: document.getElementById('adminFileInput'),
+    adminPreviewContainer: document.getElementById('adminPreviewContainer'),
+    adminPreviewImage: document.getElementById('adminPreviewImage'),
+    adminFileName: document.getElementById('adminFileName'),
+    adminSubmitBtn: document.getElementById('adminSubmitBtn'),
+    adminMessage: document.getElementById('adminMessage')
 };
 
 // Validation
@@ -342,6 +359,193 @@ const handlers = {
     }
 };
 
+// ============================================
+// ADMIN PANEL MODULE
+// ============================================
+
+const admin = {
+    // Toggle admin panel
+    toggle: () => {
+        elements.adminPanel.classList.toggle('active');
+        if (elements.adminPanel.classList.contains('active')) {
+            analytics.track('Admin Panel Opened');
+        }
+    },
+    
+    // Close admin panel
+    close: () => {
+        elements.adminPanel.classList.remove('active');
+        admin.resetForm();
+        analytics.track('Admin Panel Closed');
+    },
+    
+    // Show admin message
+    showMessage: (text, type) => {
+        elements.adminMessage.textContent = text;
+        elements.adminMessage.className = `message ${type}`;
+        elements.adminMessage.style.display = text ? 'block' : 'none';
+    },
+    
+    // Update admin submit button
+    updateSubmitButton: () => {
+        const email = elements.adminEmailInput.value.trim();
+        const isValidEmail = validators.isValidEmail(email);
+        elements.adminSubmitBtn.disabled = !(state.adminSelectedFile && isValidEmail);
+    },
+    
+    // Set uploading state
+    setUploading: (isUploading) => {
+        if (isUploading) {
+            elements.adminSubmitBtn.disabled = true;
+            elements.adminSubmitBtn.innerHTML = '<span class="loader"></span> 업로드 중...';
+        } else {
+            elements.adminSubmitBtn.disabled = false;
+            elements.adminSubmitBtn.textContent = '업로드';
+        }
+    },
+    
+    // Reset form
+    resetForm: () => {
+        elements.adminEmailInput.value = '';
+        state.adminSelectedFile = null;
+        elements.adminFileInput.value = '';
+        elements.adminPreviewContainer.style.display = 'none';
+        elements.adminSubmitBtn.textContent = '업로드';
+        admin.updateSubmitButton();
+        admin.showMessage('', '');
+    },
+    
+    // Show preview
+    showPreview: (file) => {
+        elements.adminFileName.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            elements.adminPreviewImage.src = e.target.result;
+            elements.adminPreviewContainer.style.display = 'block';
+            admin.updateSubmitButton();
+        };
+        reader.readAsDataURL(file);
+    },
+    
+    // Handle file select
+    handleFileSelect: (file) => {
+        const validation = validators.isValidImage(file);
+        if (!validation.valid) {
+            admin.showMessage(validation.error, 'error');
+            
+            // Track validation error
+            analytics.track('Admin File Validation Failed', {
+                'Error': validation.error,
+                'File Size': file.size,
+                'File Type': file.type
+            });
+            return;
+        }
+        
+        state.adminSelectedFile = file;
+        admin.showPreview(file);
+        admin.showMessage('', '');
+        
+        // Track successful file selection
+        analytics.track('Admin File Selected', {
+            'File Name': file.name,
+            'File Size': file.size,
+            'File Type': file.type,
+            'File Size MB': (file.size / (1024 * 1024)).toFixed(2)
+        });
+    },
+    
+    // Handle submit
+    handleSubmit: async () => {
+        const email = elements.adminEmailInput.value.trim();
+        
+        if (!email || !state.adminSelectedFile) {
+            admin.showMessage('이메일과 이미지를 모두 입력해주세요', 'error');
+            
+            analytics.track('Admin Form Validation Failed', {
+                'Has Email': !!email,
+                'Has File': !!state.adminSelectedFile
+            });
+            return;
+        }
+        
+        // Track upload start
+        state.adminUploadStartTime = Date.now();
+        analytics.track('Admin Upload Started', {
+            'Recipient Email': email,
+            'File Name': state.adminSelectedFile.name,
+            'File Size': state.adminSelectedFile.size,
+            'File Type': state.adminSelectedFile.type
+        });
+        
+        admin.setUploading(true);
+        
+        try {
+            await api.uploadImage(email, state.adminSelectedFile);
+            const uploadDuration = Date.now() - state.adminUploadStartTime;
+            
+            admin.showMessage('✅ 이미지가 성공적으로 업로드되었습니다!', 'success');
+            
+            // Track successful upload
+            analytics.track('Admin Upload Completed', {
+                'Recipient Email': email,
+                'File Name': state.adminSelectedFile.name,
+                'File Size': state.adminSelectedFile.size,
+                'File Type': state.adminSelectedFile.type,
+                'Duration (ms)': uploadDuration,
+                'Duration (s)': (uploadDuration / 1000).toFixed(2),
+                'Success': true
+            });
+            
+            // Reset form after 2 seconds
+            setTimeout(() => {
+                admin.resetForm();
+            }, 2000);
+        } catch (error) {
+            const uploadDuration = Date.now() - state.adminUploadStartTime;
+            console.error('Admin upload error:', error);
+            admin.showMessage(`오류: ${error.message}`, 'error');
+            
+            // Track upload error
+            analytics.track('Admin Upload Failed', {
+                'Recipient Email': email,
+                'File Name': state.adminSelectedFile ? state.adminSelectedFile.name : 'unknown',
+                'Error Message': error.message,
+                'Duration (ms)': uploadDuration,
+                'Duration (s)': (uploadDuration / 1000).toFixed(2),
+                'Success': false
+            });
+            
+            admin.setUploading(false);
+        }
+    },
+    
+    // Handle drag over
+    handleDragOver: (e) => {
+        e.preventDefault();
+        elements.adminUploadArea.classList.add('dragover');
+    },
+    
+    // Handle drag leave
+    handleDragLeave: () => {
+        elements.adminUploadArea.classList.remove('dragover');
+    },
+    
+    // Handle drop
+    handleDrop: (e) => {
+        e.preventDefault();
+        elements.adminUploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            analytics.track('Admin File Dropped', {
+                'Method': 'Drag and Drop',
+                'File Count': files.length
+            });
+            admin.handleFileSelect(files[0]);
+        }
+    }
+};
+
 // Initialize
 function init() {
     // Initialize Mixpanel
@@ -393,11 +597,78 @@ function init() {
         }
     });
     
+    // ============================================
+    // ADMIN PANEL EVENT LISTENERS
+    // ============================================
+    
+    // Double-click version info to open admin panel
+    let clickCount = 0;
+    let clickTimer = null;
+    
+    elements.versionInfo.addEventListener('click', () => {
+        clickCount++;
+        
+        if (clickCount === 1) {
+            clickTimer = setTimeout(() => {
+                clickCount = 0;
+            }, 500); // Reset after 500ms
+        } else if (clickCount === 2) {
+            clearTimeout(clickTimer);
+            clickCount = 0;
+            admin.toggle();
+        }
+    });
+    
+    // Close admin panel
+    elements.adminClose.addEventListener('click', admin.close);
+    
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && elements.adminPanel.classList.contains('active')) {
+            admin.close();
+        }
+    });
+    
+    // Close on backdrop click
+    elements.adminPanel.addEventListener('click', (e) => {
+        if (e.target === elements.adminPanel) {
+            admin.close();
+        }
+    });
+    
+    // Admin upload area events
+    elements.adminUploadArea.addEventListener('click', () => {
+        elements.adminFileInput.click();
+        analytics.track('Admin Upload Area Clicked');
+    });
+    elements.adminUploadArea.addEventListener('dragover', admin.handleDragOver);
+    elements.adminUploadArea.addEventListener('dragleave', admin.handleDragLeave);
+    elements.adminUploadArea.addEventListener('drop', admin.handleDrop);
+    
+    // Admin file input
+    elements.adminFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            admin.handleFileSelect(e.target.files[0]);
+        }
+    });
+    
+    // Admin email input
+    elements.adminEmailInput.addEventListener('input', admin.updateSubmitButton);
+    
+    // Admin submit button
+    elements.adminSubmitBtn.addEventListener('click', admin.handleSubmit);
+    elements.adminEmailInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !elements.adminSubmitBtn.disabled) {
+            admin.handleSubmit();
+        }
+    });
+    
     // Log design system version
     console.log('🎨 Design System v4.0 loaded');
     console.log('📋 Commit: 829fcf5980c867e5d6d75d068f6c50c2dc9bf983');
     console.log('🌏 Language: Korean (한국어)');
     console.log('📊 Mixpanel Analytics: Enabled');
+    console.log('🔐 Admin Panel: Double-click version info');
 }
 
 // Start the app
