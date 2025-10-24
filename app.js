@@ -219,15 +219,26 @@ const fileHandler = {
 
 // API
 const api = {
-    uploadImage: async (email, file) => {
+    uploadImage: async (email, file, isAdmin = false) => {
         const base64 = await fileHandler.convertToBase64(file);
+        
+        // Debug logging
+        console.log('🔍 Upload Debug Info:', {
+            email: email,
+            fileName: file.name,
+            isAdmin: isAdmin,
+            targetSheet: isAdmin ? 'Sheet2' : 'Sheet1'
+        });
         
         const data = {
             email: email,
             fileName: file.name,
             fileData: base64,
-            mimeType: file.type
+            mimeType: file.type,
+            isAdmin: isAdmin  // Flag to determine which sheet to use
         };
+        
+        console.log('📤 Sending to API with isAdmin:', isAdmin);
         
         const response = await fetch(CONFIG.SCRIPT_URL, {
             method: 'POST',
@@ -481,7 +492,8 @@ const admin = {
         admin.setUploading(true);
         
         try {
-            await api.uploadImage(email, state.adminSelectedFile);
+            // Upload with isAdmin flag to route to Sheet2
+            await api.uploadImage(email, state.adminSelectedFile, true);
             const uploadDuration = Date.now() - state.adminUploadStartTime;
             
             admin.showMessage('✅ 이미지가 성공적으로 업로드되었습니다!', 'success');
@@ -494,7 +506,8 @@ const admin = {
                 'File Type': state.adminSelectedFile.type,
                 'Duration (ms)': uploadDuration,
                 'Duration (s)': (uploadDuration / 1000).toFixed(2),
-                'Success': true
+                'Success': true,
+                'Target Sheet': 'Sheet2'
             });
             
             // Reset form after 2 seconds

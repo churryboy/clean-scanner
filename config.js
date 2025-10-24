@@ -1,7 +1,7 @@
 // Configuration with Mixpanel Token
 // Note: In production, use proper environment variable handling
 const CONFIG = {
-    SCRIPT_URL: 'https://script.google.com/a/macros/mathpresso.com/s/AKfycbwgxUnTISaGMm2jBimis_cm71hlDhIjajzAjQgERc3nskqsp0PbGxgcAmgmMw0UQmbPZw/exec',
+    SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyQM2qtGy6p9YKNbm0wiDCkKQjvSKdvInv_J5xRtlzv8n0QJA_ozhmCw8Fv1VJ2B1rOLg/exec',
     MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
     ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
     
